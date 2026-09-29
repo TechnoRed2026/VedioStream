@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1422">
+<title>پخش‌کننده</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%23f2a93b%22/%3E%3Cpath d=%22M12 9v14l11-7z%22 fill=%22%231b1422%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1422;        /* پس‌زمینه: بادمجانیِ شب */
+    --panel: #251c2e;
+    --line: #3b2e47;
+    --paper: #f4eadb;      /* متن */
+    --muted: #ad9db3;
+    --saffron: #f2a93b;    /* رنگ اصلی: زعفرانی */
+    --pomegranate: #e0636b;
+    --mint: #79c7a8;
+    --radius: 14px;
+    --ui: "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+    --display: "Lalezar", "Vazirmatn", Tahoma, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { margin: 0; background: var(--ink); color: var(--paper); }
+  body { font: 400 15px/1.7 var(--ui); -webkit-font-smoothing: antialiased; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px clamp(14px, 3vw, 28px) 48px; }
+
+  /* ---------- سربرگ ---------- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .brand { font: 400 clamp(34px, 5vw, 46px)/1 var(--display); color: var(--saffron); margin: 0; letter-spacing: 0; }
+  .net { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; }
+  .net i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .net.on i { background: var(--mint); }
+  .net.off { color: var(--paper); border-color: var(--pomegranate); }
+  .net.off i { background: var(--pomegranate); animation: blink 1.2s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  /* ---------- ورودی لینک ---------- */
+  form.load { display: flex; gap: 8px; }
+  form.load input {
+    flex: 1; min-width: 0; direction: ltr; text-align: left;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 16px; font-size: 14px;
+  }
+  form.load input::placeholder { color: var(--muted); direction: rtl; text-align: right; }
+  form.load input:focus { border-color: var(--saffron); outline: none; }
+  .btn-main {
+    border: 0; border-radius: var(--radius); background: var(--saffron); color: var(--ink);
+    font-weight: 700; padding: 0 26px; cursor: pointer;
+  }
+  .btn-main:hover { filter: brightness(1.06); }
+  .recents { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+  .recents button {
+    max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr;
+    background: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px;
+    font-size: 12.5px; color: var(--muted); cursor: pointer;
+  }
+  .recents button:hover { color: var(--paper); border-color: var(--muted); }
+
+  /* ---------- عنوان فایل ---------- */
+  .title-row[hidden] + .stage { margin-top: 26px; }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 26px 0 10px; min-height: 30px; }
+  .title-row h2 { margin: 0; font-size: 17px; font-weight: 500; direction: ltr; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chips { display: flex; gap: 6px; flex-shrink: 0; }
+  .chips span { font-size: 12px; color: var(--muted); background: var(--panel); border-radius: 6px; padding: 2px 8px; direction: ltr; }
+
+  /* ---------- صحنه‌ی پخش ---------- */
+  .stage { position: relative; background: #000; border-radius: var(--radius); overflow: hidden; }
+  .screen { position: relative; aspect-ratio: 16 / 9; background: #000; }
+  video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+  .empty {
+    position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px;
+    background: var(--panel);
+    background-image: radial-gradient(circle at 50% 120%, rgba(242,169,59,.14), transparent 60%);
+  }
+  .empty h3 { font: 400 clamp(26px, 4.4vw, 42px)/1.25 var(--display); margin: 0 0 10px; }
+  .empty p { margin: 0 auto; max-width: 52ch; color: var(--muted); }
+
+  .overlay { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+  .overlay .msg { background: rgba(27,20,34,.82); padding: 10px 18px; border-radius: 10px; font-size: 14px; }
+  .loader { width: 120px; height: 3px; margin: 0 auto 10px; background: rgba(244,234,219,.15); border-radius: 3px; overflow: hidden; }
+  .loader::after { content: ""; display: block; width: 40%; height: 100%; background: var(--saffron); animation: slide 1.1s ease-in-out infinite; }
+  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+
+  .error { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 24px; background: rgba(27,20,34,.94); }
+  .error strong { display: block; font-size: 17px; margin-bottom: 6px; color: var(--pomegranate); }
+  .error p { margin: 0 auto 14px; max-width: 46ch; color: var(--muted); }
+  .error button { justify-self: center; }
+
+  .toast {
+    position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 12px;
+    background: rgba(27,20,34,.9); border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px 7px 14px; font-size: 13.5px;
+  }
+  .toast button { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; cursor: pointer; font-size: 13px; }
+  .toast button:hover { border-color: var(--saffron); }
+
+  /* ---------- نوار زمان: عنصر اصلی ---------- */
+  .bar { position: relative; direction: ltr; background: var(--panel); padding: 14px 16px 10px; }
+  .stage.no-media .bar { opacity: .4; pointer-events: none; }
+  .timeline { position: relative; height: 26px; cursor: pointer; touch-action: none; }
+  .track {
+    position: absolute; left: 0; right: 0; top: 50%; height: 8px; transform: translateY(-50%);
+    background: rgba(244,234,219,.1); border-radius: 8px; overflow: hidden; transition: height .15s;
+  }
+  .timeline:hover .track, .timeline.drag .track { height: 12px; }
+  .track > div { position: absolute; top: 0; bottom: 0; }
+  .disk, .buf { left: 0; right: 0; }
+  .disk span {
+    position: absolute; top: 0; bottom: 0;
+    background: repeating-linear-gradient(-45deg, rgba(242,169,59,.42) 0 3px, rgba(242,169,59,.14) 3px 7px);
+  }
+  .buf span { position: absolute; top: 0; bottom: 0; background: rgba(244,234,219,.34); }
+  .played { left: 0; background: var(--saffron); }
+  .head {
+    position: absolute; top: 50%; width: 16px; height: 16px; margin-left: -8px; transform: translateY(-50%);
+    background: var(--paper); border: 3px solid var(--saffron); border-radius: 50%; pointer-events: none;
+  }
+  .hover-time {
+    position: absolute; bottom: 100%; transform: translateX(-50%); margin-bottom: 2px;
+    background: var(--ink); color: var(--paper); font-size: 12px; padding: 1px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+  }
+
+  .controls { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .controls .grow { flex: 1; }
+  .ic {
+    width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 0; border-radius: 10px; cursor: pointer; color: var(--paper);
+  }
+  .ic:hover { background: rgba(244,234,219,.08); }
+  .ic svg { width: 22px; height: 22px; }
+  .ic.play { width: 46px; height: 46px; background: var(--saffron); color: var(--ink); border-radius: 50%; margin: 0 4px; }
+  .ic.play:hover { background: var(--saffron); filter: brightness(1.07); }
+  .ic.play svg { width: 22px; height: 22px; }
+  .time { font-size: 14px; margin-left: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .time .total { color: var(--muted); }
+  .vol { display: flex; align-items: center; }
+  .vol input { width: 84px; accent-color: var(--saffron); }
+
+  /* ---------- پنل تنظیمات ---------- */
+  .panel {
+    position: absolute; right: 12px; bottom: calc(100% + 8px); width: min(340px, calc(100vw - 40px));
+    direction: rtl; background: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; z-index: 5;
+    box-shadow: 0 18px 50px rgba(0,0,0,.5);
+  }
+  .panel h4 { margin: 0 0 6px; font-size: 13.5px; font-weight: 700; }
+  .panel .row { padding: 12px 0; border-top: 1px solid var(--line); }
+  .panel .row:first-child { border-top: 0; padding-top: 0; }
+  .panel .hint { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  .panel select { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border-radius: 10px; padding: 3px; }
+  .seg button { background: none; border: 0; border-radius: 8px; padding: 7px; cursor: pointer; font-size: 13.5px; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--line); color: var(--paper); }
+  .seg button:disabled { opacity: .4; cursor: not-allowed; }
+  .sync { display: flex; align-items: center; gap: 6px; }
+  .sync button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 13px; }
+  .sync output { flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
+  .check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; font-size: 13.5px; }
+  .check input { margin-top: 5px; accent-color: var(--saffron); }
+
+  /* ---------- وضعیت زیر پخش‌کننده ---------- */
+  .status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-top: 14px; font-size: 13.5px; color: var(--muted); }
+  .status b { color: var(--paper); font-weight: 500; }
+  .legend { display: flex; gap: 14px; margin-inline-start: auto; font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 18px; height: 7px; border-radius: 4px; display: inline-block; }
+  .sw-played { background: var(--saffron); }
+  .sw-buf { background: rgba(244,234,219,.34); }
+  .sw-disk { background: repeating-linear-gradient(-45deg, rgba(242,169,59,.6) 0 3px, rgba(242,169,59,.2) 3px 7px); }
+
+  .keys { margin-top: 28px; font-size: 12.5px; color: var(--muted); }
+  .keys kbd { font: inherit; border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; margin: 0 2px; color: var(--paper); }
+
+  /* ---------- تمام‌صفحه ---------- */
+  .stage:fullscreen { border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
+  .stage:fullscreen .screen { aspect-ratio: auto; height: 100%; }
+  .stage:fullscreen .bar {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(transparent, rgba(27,20,34,.92) 45%);
+    padding: 40px 24px calc(14px + env(safe-area-inset-bottom, 0px)); transition: opacity .25s;
+  }
+  .stage:fullscreen.idle .bar { opacity: 0; }
+  .stage:fullscreen.idle { cursor: none; }
+
+  @media (max-width: 640px) {
+    .vol input, .legend { display: none; }
+    .ic { width: 36px; height: 36px; }
+    .time { font-size: 13px; margin-left: 6px; }
+    .title-row { flex-direction: column; align-items: stretch; gap: 6px; }
+    .btn-main { padding: 0 18px; }
+  }
+  @media (hover: none) { .keys { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="brand">پخش</h1>
+    <span class="net" id="net" hidden><i></i><span id="netText"></span></span>
+  </header>
+
+  <form class="load" id="loadForm" autocomplete="off">
+    <input id="urlInput" type="url" inputmode="url" required placeholder="لینک مستقیم فیلم را اینجا بگذارید" aria-label="لینک فیلم">
+    <button class="btn-main" type="submit">پخش کن</button>
+  </form>
+  <ul class="recents" id="recents" aria-label="لینک‌های اخیر"></ul>
+
+  <div class="title-row" id="titleRow" hidden>
+    <h2 id="fileName"></h2>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="stage no-media" id="stage">
+    <div class="screen">
+      <video id="v" playsinline preload="auto"></video>
+
+      <div class="empty" id="empty">
+        <h3>لینک را بدهید، همین حالا ببینید</h3>
+        <p>فایل‌های mp4 و mkv پخش می‌شوند. فقط حدود ۴۵ ثانیه جلوتر از جایی که تماشا می‌کنید دانلود می‌شود و اگر اینترنت قطع شود، پخش از همین مقدار ادامه پیدا می‌کند.</p>
+      </div>
+
+      <div class="overlay" id="busy" hidden>
+        <div class="msg"><div class="loader"></div><span id="busyText">در حال آماده‌سازی…</span></div>
+      </div>
+
+      <div class="error" id="error" hidden>
+        <strong id="errTitle"></strong>
+        <p id="errText"></p>
+        <button class="btn-main" id="errRetry" type="button" style="padding:10px 22px">دوباره امتحان کن</button>
+      </div>
+
+      <div class="toast" id="toast" hidden>
+        <span id="toastText"></span>
+        <button id="toastBtn" type="button"></button>
+      </div>
+    </div>
+
+    <div class="bar" id="bar">
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="زمان فیلم" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0">
+        <div class="track">
+          <div class="disk" id="diskLayer"></div>
+          <div class="buf" id="bufLayer"></div>
+          <div class="played" id="played"></div>
+        </div>
+        <div class="head" id="head"></div>
+        <div class="hover-time" id="hoverTime" hidden></div>
+      </div>
+
+      <div class="controls">
+        <button class="ic" id="back" type="button" aria-label="۱۰ ثانیه عقب" title="۱۰ ثانیه عقب">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><text x="12" y="15.5" font-size="7.5" text-anchor="middle" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">10</text></svg>
+        </button>
+        <button class="ic play" id="play" type="button" aria-label="پخش" title="پخش">
+          <svg id="icPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.4-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>
+          <svg id="icPause" viewBox="0 0 24 24" fill="currentColor" hidden><rect x="6" y="4" width="4.5" height="16" rx="1.2"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.2"/></svg>
+        </button>
+        <button class="ic" id="fwd" type="button" aria-label="۱۰ ثانیه جلو" title="۱۰ ثانیه جلو">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/><text x="12" y="15.5" font-size="7.5" text-anchor="middle" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">10</text></svg>
+        </button>
+        <div class="time"><span id="cur">۰:۰۰</span> <span class="total">/ <span id="dur">۰:۰۰</span></span></div>
+        <div class="grow"></div>
+        <div class="vol">
+          <button class="ic" id="mute" type="button" aria-label="قطع صدا" title="قطع صدا">
+            <svg id="icVol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+            <svg id="icMute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path d="m16 9 5 6M21 9l-5 6"/></svg>
+          </button>
+          <input id="volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="بلندی صدا">
+        </div>
+        <button class="ic" id="settingsBtn" type="button" aria-label="تنظیمات پخش" title="تنظیمات پخش" aria-expanded="false" aria-controls="panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg>
+        </button>
+        <button class="ic" id="fsBtn" type="button" aria-label="تمام‌صفحه" title="تمام‌صفحه">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+        </button>
+      </div>
+
+      <div class="panel" id="panel" hidden>
+        <div class="row">
+          <h4>صدای فیلم</h4>
+          <select id="audioSel" aria-label="انتخاب صدا"></select>
+          <p class="hint" id="audioHint" hidden>عوض کردن صدا پخش را به حالت «تبدیل هم‌زمان» می‌برد.</p>
+        </div>
+        <div class="row">
+          <h4>هم‌زمانی صدا و تصویر</h4>
+          <div class="sync">
+            <button type="button" id="adMinus" aria-label="صدا ۱۰۰ میلی‌ثانیه زودتر">زودتر</button>
+            <output id="adVal">۰ میلی‌ثانیه</output>
+            <button type="button" id="adPlus" aria-label="صدا ۱۰۰ میلی‌ثانیه دیرتر">دیرتر</button>
+          </div>
+          <p class="hint">اگر صدا جلوتر از تصویر است «دیرتر» را بزنید. فقط در حالت تبدیل هم‌زمان کار می‌کند.</p>
+        </div>
+        <div class="row">
+          <h4>روش پخش</h4>
+          <div class="seg" role="group" aria-label="روش پخش">
+            <button type="button" id="modeDirect" aria-pressed="true">مستقیم</button>
+            <button type="button" id="modeTrans" aria-pressed="false">تبدیل هم‌زمان</button>
+          </div>
+          <p class="hint" id="modeHint">مستقیم سبک‌تر است. برای mkv یا وقتی فایل پخش نمی‌شود، تبدیل هم‌زمان را انتخاب کنید.</p>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="encodeChk"><span>تبدیل تصویر هم انجام شود<br><span class="hint" style="margin:0">اگر صدا هست ولی تصویر سیاه است. به پردازنده‌ی بیشتری نیاز دارد.</span></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status" hidden>
+    <span>آماده‌ی پخش جلوتر: <b id="readyAhead">—</b></span>
+    <span id="diskWrap">روی دیسک: <b id="diskPct">—</b></span>
+    <span class="legend" aria-hidden="true">
+      <span><i class="sw-played"></i>دیده‌شده</span>
+      <span><i class="sw-buf"></i>در مرورگر</span>
+      <span><i class="sw-disk"></i>روی دیسک</span>
+    </span>
+  </div>
+
+  <p class="keys">میان‌برها: <kbd>فاصله</kbd> پخش و توقف، <kbd>←</kbd> <kbd>→</kbd> ده ثانیه عقب و جلو، <kbd>F</kbd> تمام‌صفحه، <kbd>M</kbd> قطع صدا</p>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const v = $('v');
+  const stage = $('stage');
+  const store = {
+    get(k, d) { try { const x = localStorage.getItem(k); return x == null ? d : JSON.parse(x); } catch { return d; } },
+    set(k, x) { try { localStorage.setItem(k, JSON.stringify(x)); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
+  };
+
+  // ---------- قالب‌بندی ----------
+  const faNum = (n, digits = 1) => Number(n).toLocaleString('fa-IR', { minimumIntegerDigits: digits, useGrouping: false });
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h ? `${faNum(h)}:${faNum(m, 2)}:${faNum(s, 2)}` : `${faNum(m)}:${faNum(s, 2)}`;
+  }
+  const fileNameOf = (u) => {
+    try { const p = new URL(u).pathname.split('/').filter(Boolean).pop() || new URL(u).host; return decodeURIComponent(p); }
+    catch { return u; }
+  };
+  const enc = encodeURIComponent;
+  const show = (el, on) => { if (on) el.removeAttribute('hidden'); else el.setAttribute('hidden', ''); };
+
+  // ---------- وضعیت ----------
+  const S = {
+    url: null, info: null, mode: 'direct', canDirect: true,
+    offset: 0, duration: 0, audio: 0, ad: 0, encode: false,
+    gen: 0, triedTranscode: false, triedEncode: false,
+    status: null, dragging: false, dragFrac: 0,
+  };
+  const cur = () => (S.mode === 'direct' ? v.currentTime : S.offset + v.currentTime) || 0;
+  const dur = () => S.duration || (isFinite(v.duration) ? v.duration : 0);
+
+  // ---------- پیام‌ها ----------
+  function busy(text) {
+    if (text) { $('busyText').textContent = text; $('busy').hidden = false; }
+    else $('busy').hidden = true;
+  }
+  let retryFn = null;
+  function showError(title, text, retry) {
+    busy(false);
+    $('errTitle').textContent = title;
+    $('errText').textContent = text;
+    retryFn = retry || null;
+    $('errRetry').hidden = !retry;
+    $('error').hidden = false;
+  }
+  $('errRetry').onclick = () => { $('error').hidden = true; if (retryFn) retryFn(); };
+  let toastTimer;
+  function toast(text, btnText, onBtn, ms = 9000) {
+    $('toastText').textContent = text;
+    $('toastBtn').textContent = btnText || '';
+    $('toastBtn').hidden = !btnText;
+    $('toastBtn').onclick = () => { $('toast').hidden = true; onBtn && onBtn(); };
+    $('toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { $('toast').hidden = true; }, ms);
+  }
+
+  // ---------- لینک‌های اخیر ----------
+  function renderRecents() {
+    const list = store.get('sp:recent', []);
+    const ul = $('recents');
+    ul.replaceChildren(...list.filter((u) => u !== S.url).slice(0, 5).map((u) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = fileNameOf(u); b.title = u;
+      b.onclick = () => { $('urlInput').value = u; load(u); };
+      li.append(b); return li;
+    }));
+  }
+  function remember(u) {
+    const list = store.get('sp:recent', []).filter((x) => x !== u);
+    list.unshift(u); store.set('sp:recent', list.slice(0, 8));
+  }
+
+  // ---------- تشخیص پشتیبانی مرورگر ----------
+  const can = (t) => !!t && v.canPlayType(t) !== '';
+  const VIDEO_MP4 = { h264: 'avc1.640028', hevc: 'hvc1.1.6.L120.90', av1: 'av01.0.08M.08', vp9: 'vp09.00.10.08' };
+  const AUDIO = {
+    aac: 'audio/mp4; codecs="mp4a.40.2"', mp3: 'audio/mpeg', opus: 'audio/webm; codecs="opus"',
+    vorbis: 'audio/webm; codecs="vorbis"', flac: 'audio/flac', ac3: 'audio/mp4; codecs="ac-3"', eac3: 'audio/mp4; codecs="ec-3"',
+  };
+  function analyse(info, url) {
+    if (!info) return { direct: true, encode: false };
+    const vc = info.videoCodec;
+    const mp4Video = VIDEO_MP4[vc] ? can(`video/mp4; codecs="${VIDEO_MP4[vc]}"`) : false;
+    const ext = (new URL(url).pathname.match(/\.(\w+)$/) || [])[1]?.toLowerCase();
+    const isMp4 = /mp4|mov/.test(info.container);
+    const isWebm = ext === 'webm';
+    let videoOk = isMp4 ? mp4Video : isWebm ? can(`video/webm; codecs="${vc === 'vp8' ? 'vp8' : vc === 'vp9' ? 'vp9' : vc === 'av1' ? 'av01.0.08M.08' : vc}"`) : false;
+    const a = info.audios[0];
+    const audioOk = !a || can(AUDIO[a.codec]);
+    return { direct: (isMp4 || isWebm) && videoOk && audioOk, encode: !!vc && !mp4Video };
+  }
+
+  // ---------- بارگذاری ----------
+  async function load(u) {
+    let url;
+    try { url = new URL(u.trim()); if (!/^https?:$/.test(url.protocol)) throw 0; }
+    catch { showError('این لینک معتبر نیست', 'لینک باید با http:// یا https:// شروع شود و مستقیم به فایل ویدیو برسد.'); return; }
+    u = url.href;
+    const gen = ++S.gen;
+    Object.assign(S, { url: u, info: null, offset: 0, duration: 0, audio: 0, ad: 0, triedTranscode: false, triedEncode: false, status: null });
+    v.removeAttribute('src'); v.load();
+    $('empty').hidden = true; $('error').hidden = true; $('titleRow').hidden = false; stage.classList.remove('no-media'); $('toast').hidden = true; $('panel').hidden = true;
+    $('fileName').textContent = fileNameOf(u); $('fileName').title = u;
+    $('chips').replaceChildren();
+    $('status').hidden = false; $('readyAhead').textContent = '—'; $('diskPct').textContent = '—';
+    document.title = fileNameOf(u) + ' — پخش';
+    remember(u); renderRecents();
+    const qs = new URLSearchParams(location.search); qs.set('url', u);
+    history.replaceState(null, '', '?' + qs);
+    busy('در حال خواندن اطلاعات فایل…');
+
+    try {
+      const r = await fetch('/info?url=' + enc(u));
+      if (r.ok) S.info = await r.json();
+    } catch {}
+    if (gen !== S.gen) return;
+
+    const a = analyse(S.info, u);
+    S.canDirect = a.direct;
+    S.mode = a.direct ? 'direct' : 'transcode';
+    S.encode = a.encode;
+    S.duration = S.info?.duration || 0;
+    renderChips(); renderSettings();
+
+    const saved = store.get('sp:pos:' + u, 0);
+    let t = 0;
+    if (saved > 15 && (!S.duration || saved < S.duration - 30)) {
+      t = saved;
+      toast(`از ${fmt(saved)} ادامه دارد`, 'از اول ببین', () => seek(0));
+    }
+    start(t);
+  }
+
+  function renderChips() {
+    const i = S.info, out = [];
+    if (i) {
+      if (i.width && i.height) out.push(`${i.width}×${i.height}`);
+      if (i.videoCodec) out.push(i.videoCodec.toUpperCase());
+      if (i.duration) out.push(fmt(i.duration));
+    }
+    $('chips').replaceChildren(...out.map((t) => Object.assign(document.createElement('span'), { textContent: t })));
+    $('dur').textContent = fmt(dur());
+  }
+
+  function start(t) {
+    $('error').hidden = true;
+    if (S.mode === 'direct') {
+      busy('در حال وصل شدن…');
+      S.offset = 0;
+      v.src = '/proxy?url=' + enc(S.url);
+      if (t > 0) v.addEventListener('loadedmetadata', () => { v.currentTime = t; }, { once: true });
+      v.play().catch(() => {});
+    } else {
+      transcodeFrom(t);
+    }
+    report(true);
+  }
+
+  async function transcodeFrom(t) {
+    const gen = ++S.gen;
+    busy(t > 0 ? `رفتن به ${fmt(t)}…` : 'در حال آماده‌سازی…');
+    let k = 0;
+    if (t >= 0.5) {
+      try { k = (await (await fetch(`/keyframe?url=${enc(S.url)}&t=${t.toFixed(2)}`)).json()).start; }
+      catch { k = t; }
+    }
+    if (gen !== S.gen) return;
+    S.offset = k;
+    const qs = `url=${enc(S.url)}&start=${k}&audio=${S.audio}&ad=${S.ad}${S.encode ? '&v=encode' : ''}`;
+    v.src = '/transcode?' + qs;
+    v.play().catch(() => {});
+    render();
+  }
+
+  function seek(t) {
+    const d = dur();
+    t = Math.max(0, d ? Math.min(t, d - 1) : t);
+    if (S.mode === 'direct') v.currentTime = t;
+    else transcodeFrom(t);
+    savePos(t);
+    render();
+    report(true);
+  }
+
+  function restartHere() { start(cur()); }
+
+  // ---------- رویدادهای ویدیو ----------
+  v.addEventListener('waiting', () => { busy(S.status && !S.status.online ? 'اینترنت قطع است؛ منتظر وصل شدن…' : 'در حال بارگیری…'); report(true); });
+  v.addEventListener('playing', () => { busy(false); syncPlayIcon(); report(true); });
+  v.addEventListener('canplay', () => busy(false));
+  v.addEventListener('pause', () => { syncPlayIcon(); savePos(); report(true); });
+  v.addEventListener('play', syncPlayIcon);
+  v.addEventListener('seeking', () => report(true));
+  v.addEventListener('durationchange', () => { $('dur').textContent = fmt(dur()); });
+  v.addEventListener('loadeddata', () => {
+    // صدا هست ولی تصویر نه: کدک تصویر در مرورگر پشتیبانی نمی‌شود
+    if (S.info?.videoCodec && v.videoWidth === 0 && !S.encode) {
+      S.encode = true; S.mode = 'transcode'; renderSettings();
+      toast('تصویر در این مرورگر نمایش داده نمی‌شد؛ تبدیل تصویر روشن شد.');
+      restartHere();
+    }
+  });
+  v.addEventListener('ended', () => { store.del('sp:pos:' + S.url); syncPlayIcon(); });
+  v.addEventListener('error', () => {
+    if (!S.url || !v.getAttribute('src')) return;
+    const t = cur();
+    if (S.mode === 'direct' && !S.triedTranscode) {
+      S.triedTranscode = true; S.mode = 'transcode'; renderSettings();
+      toast('پخش مستقیم ممکن نبود؛ با تبدیل هم‌زمان پخش می‌شود.');
+      return start(t);
+    }
+    if (S.mode === 'transcode' && !S.encode && !S.triedEncode) {
+      S.triedEncode = true; S.encode = true; renderSettings();
+      toast('تصویر با تبدیل کامل پخش می‌شود.');
+      return start(t);
+    }
+    showError('این فایل پخش نشد',
+      'سرور مبدأ فایل را نفرستاد یا قالب آن قابل خواندن نیست. لینک را در مرورگر باز کنید تا مطمئن شوید مستقیم دانلود می‌شود.',
+      () => { S.triedTranscode = false; S.triedEncode = false; start(t); });
+  });
+
+  // ---------- کنترل‌ها ----------
+  function syncPlayIcon() {
+    const p = v.paused;
+    show($('icPlay'), p); show($('icPause'), !p);
+    $('play').setAttribute('aria-label', p ? 'پخش' : 'توقف');
+    $('play').title = p ? 'پخش' : 'توقف';
+  }
+  function togglePlay() { if (!S.url) return; v.paused ? v.play().catch(() => {}) : v.pause(); }
+  $('play').onclick = togglePlay;
+  v.addEventListener('click', togglePlay);
+  $('back').onclick = () => S.url && seek(cur() - 10);
+  $('fwd').onclick = () => S.url && seek(cur() + 10);
+
+  function syncVol() {
+    const m = v.muted || v.volume === 0;
+    show($('icVol'), !m); show($('icMute'), m);
+    $('volume').value = v.muted ? 0 : v.volume;
+    store.set('sp:vol', { vol: v.volume, muted: v.muted });
+  }
+  $('mute').onclick = () => { v.muted = !v.muted; if (!v.muted && v.volume === 0) v.volume = 0.6; syncVol(); };
+  $('volume').oninput = (e) => { v.volume = +e.target.value; v.muted = v.volume === 0; syncVol(); };
+  { const s = store.get('sp:vol', null); if (s) { v.volume = s.vol; v.muted = s.muted; } syncVol(); }
+
+  // تمام‌صفحه
+  $('fsBtn').onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  };
+  let idleTimer;
+  function wake() {
+    stage.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { if (!v.paused && $('panel').hidden) stage.classList.add('idle'); }, 2600);
+  }
+  stage.addEventListener('pointermove', wake);
+  document.addEventListener('fullscreenchange', wake);
+
+  // ---------- نوار زمان ----------
+  const tl = $('timeline');
+  function fracAt(e) {
+    const r = tl.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  }
+  tl.addEventListener('pointermove', (e) => {
+    const d = dur(); if (!d) return;
+    const f = fracAt(e);
+    const h = $('hoverTime');
+    h.hidden = false; h.textContent = fmt(f * d); h.style.left = (f * 100) + '%';
+    if (S.dragging) { S.dragFrac = f; render(); }
+  });
+  tl.addEventListener('pointerleave', () => { if (!S.dragging) $('hoverTime').hidden = true; });
+  tl.addEventListener('pointerdown', (e) => {
+    if (!dur()) return;
+    S.dragging = true; S.dragFrac = fracAt(e);
+    tl.classList.add('drag'); tl.setPointerCapture(e.pointerId); render();
+  });
+  const endDrag = (e) => {
+    if (!S.dragging) return;
+    S.dragging = false; tl.classList.remove('drag'); $('hoverTime').hidden = true;
+    seek(S.dragFrac * dur());
+  };
+  tl.addEventListener('pointerup', endDrag);
+  tl.addEventListener('pointercancel', () => { S.dragging = false; tl.classList.remove('drag'); render(); });
+  tl.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { seek(cur() + 5); e.preventDefault(); e.stopPropagation(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { seek(cur() - 5); e.preventDefault(); e.stopPropagation(); }
+  });
+
+  function spans(el, list) {
+    // فقط اگر تعداد عوض شده، عنصر بساز
+    while (el.children.length < list.length) el.append(document.createElement('span'));
+    while (el.children.length > list.length) el.lastChild.remove();
+    list.forEach(([a, b], i) => {
+      const s = el.children[i].style;
+      s.left = (a * 100) + '%'; s.width = Math.max(0, (b - a) * 100) + '%';
+    });
+  }
+
+  function render() {
+    const d = dur();
+    const t = S.dragging ? S.dragFrac * d : cur();
+    const f = d ? Math.min(1, t / d) : 0;
+    $('played').style.width = (f * 100) + '%';
+    $('head').style.left = (f * 100) + '%';
+    $('cur').textContent = fmt(t);
+    tl.setAttribute('aria-valuemax', Math.round(d));
+    tl.setAttribute('aria-valuenow', Math.round(t));
+    tl.setAttribute('aria-valuetext', `${fmt(t)} از ${fmt(d)}`);
+    const buf = [];
+    if (d) for (let i = 0; i < v.buffered.length; i++) {
+      buf.push([(S.offset + v.buffered.start(i)) / d, (S.offset + v.buffered.end(i)) / d]);
+    }
+    spans($('bufLayer'), buf);
+    spans($('diskLayer'), S.status?.ranges || []);
+  }
+  v.addEventListener('timeupdate', () => { render(); report(); });
+  setInterval(render, 500);
+
+  // ---------- گزارش به سرور و وضعیت ----------
+  function bufferedAhead() {
+    const t = v.currentTime;
+    for (let i = 0; i < v.buffered.length; i++) {
+      if (v.buffered.start(i) <= t + 0.5 && t <= v.buffered.end(i)) return v.buffered.end(i) - t;
+    }
+    return 0;
+  }
+  let lastReport = 0, inflight = false;
+  async function report(force) {
+    if (!S.url || inflight) return;
+    const now = Date.now();
+    if (!force && now - lastReport < 900) return;
+    lastReport = now; inflight = true;
+    const ahead = bufferedAhead();
+    const playing = !v.paused && v.readyState >= 3 ? 1 : 0;
+    try {
+      const r = await fetch(`/status?url=${enc(S.url)}&t=${v.currentTime.toFixed(2)}&p=${playing}&d=${dur().toFixed(1)}`, { cache: 'no-store' });
+      const st = await r.json();
+      S.status = st;
+      renderStatus(st, ahead);
+    } catch {
+      renderNet(null);
+    } finally { inflight = false; }
+  }
+  setInterval(() => report(), 1000);
+
+  function renderNet(st) {
+    const n = $('net');
+    n.hidden = !S.url;
+    n.classList.toggle('on', !!st?.online);
+    n.classList.toggle('off', !!st && !st.online);
+    $('netText').textContent = !st ? 'سرور پخش در دسترس نیست'
+      : st.online ? 'اینترنت وصل است' : 'اینترنت قطع است؛ از بافر پخش می‌شود';
+  }
+  function renderStatus(st, ahead) {
+    renderNet(st);
+    if (st.unsupported) {
+      $('diskWrap').hidden = true;
+      $('readyAhead').textContent = `${faNum(Math.round(ahead))} ثانیه`;
+      return;
+    }
+    $('diskWrap').hidden = false;
+    const total = Math.round(Math.max(ahead, st.sentSec || 0) + (st.aheadSec || 0));
+    $('readyAhead').textContent = st.done ? 'کل فایل' : `${faNum(total)} ثانیه`;
+    $('diskPct').textContent = `${faNum(Math.round(st.percent))}٪ از فایل`;
+    if (!v.paused && !$('busy').hidden && !st.online) busy('اینترنت قطع است؛ منتظر وصل شدن…');
+  }
+
+  function savePos(t) {
+    if (!S.url) return;
+    const p = t ?? cur(); const d = dur();
+    if (d && p > d - 30) store.del('sp:pos:' + S.url);
+    else if (p > 5) store.set('sp:pos:' + S.url, Math.floor(p));
+  }
+  setInterval(() => { if (S.url && !v.paused) savePos(); }, 5000);
+  window.addEventListener('pagehide', () => savePos());
+
+  // ---------- تنظیمات ----------
+  const panel = $('panel');
+  $('settingsBtn').onclick = (e) => {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    $('settingsBtn').setAttribute('aria-expanded', String(!panel.hidden));
+  };
+  document.addEventListener('click', (e) => {
+    if (!panel.hidden && !panel.contains(e.target) && e.target !== $('settingsBtn')) {
+      panel.hidden = true; $('settingsBtn').setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  function renderSettings() {
+    const sel = $('audioSel');
+    const auds = S.info?.audios || [];
+    sel.replaceChildren(...(auds.length ? auds : [{ index: 0 }]).map((a, i) => {
+      const o = document.createElement('option');
+      const bits = [a.title, a.language && a.language.toUpperCase(), a.codec && a.codec.toUpperCase(), a.channels && `${faNum(a.channels)} کاناله`].filter(Boolean);
+      o.value = i; o.textContent = `صدای ${faNum(i + 1)}` + (bits.length ? ` (${bits.join('، ')})` : '');
+      return o;
+    }));
+    sel.value = S.audio; sel.disabled = auds.length < 2;
+    $('audioHint').hidden = !(auds.length > 1 && S.mode === 'direct');
+    $('adVal').textContent = `${S.ad > 0 ? '+' : ''}${faNum(S.ad)} میلی‌ثانیه`;
+    $('modeDirect').setAttribute('aria-pressed', String(S.mode === 'direct'));
+    $('modeTrans').setAttribute('aria-pressed', String(S.mode === 'transcode'));
+    $('modeDirect').disabled = !S.canDirect;
+    $('modeHint').textContent = S.canDirect
+      ? 'مستقیم سبک‌تر است. اگر فایل پخش نمی‌شود یا صدای دیگری می‌خواهید، تبدیل هم‌زمان را انتخاب کنید.'
+      : 'این فایل در مرورگر مستقیم پخش نمی‌شود، پس به‌صورت هم‌زمان تبدیل می‌شود.';
+    $('encodeChk').checked = S.encode;
+    $('encodeChk').disabled = S.mode === 'direct';
+  }
+
+  $('audioSel').onchange = (e) => {
+    S.audio = +e.target.value;
+    if (S.mode === 'direct') S.mode = 'transcode';
+    renderSettings(); if (S.url) restartHere();
+  };
+  let adTimer;
+  function nudgeAd(delta) {
+    S.ad = Math.max(-10000, Math.min(10000, S.ad + delta));
+    if (S.mode === 'direct' && S.ad !== 0) S.mode = 'transcode';
+    renderSettings();
+    clearTimeout(adTimer);
+    adTimer = setTimeout(() => S.url && restartHere(), 700);
+  }
+  $('adMinus').onclick = () => nudgeAd(-100);
+  $('adPlus').onclick = () => nudgeAd(100);
+  $('modeDirect').onclick = () => { if (S.mode !== 'direct' && S.canDirect) { S.mode = 'direct'; S.audio = 0; S.ad = 0; renderSettings(); S.url && restartHere(); } };
+  $('modeTrans').onclick = () => { if (S.mode !== 'transcode') { S.mode = 'transcode'; renderSettings(); S.url && restartHere(); } };
+  $('encodeChk').onchange = (e) => { S.encode = e.target.checked; renderSettings(); S.url && restartHere(); };
+
+  // ---------- میان‌برها ----------
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === ' ' || k === 'k') { togglePlay(); e.preventDefault(); }
+    else if (k === 'arrowright') { S.url && seek(cur() + 10); e.preventDefault(); }
+    else if (k === 'arrowleft') { S.url && seek(cur() - 10); e.preventDefault(); }
+    else if (k === 'f' || k === 'ب') $('fsBtn').click();
+    else if (k === 'm' || k === 'پ') $('mute').click();
+    else if (k === 'escape' && !panel.hidden) panel.hidden = true;
+    wake();
+  });
+
+  // ---------- شروع ----------
+  $('loadForm').onsubmit = (e) => { e.preventDefault(); load($('urlInput').value); };
+  renderRecents(); renderSettings(); syncPlayIcon(); render();
+  const initial = new URLSearchParams(location.search).get('url');
+  if (initial) { $('urlInput').value = initial; load(initial); }
+})();
+</script>
+</body>
+</html>
